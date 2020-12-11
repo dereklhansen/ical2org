@@ -17,6 +17,7 @@ type args struct {
 	appfile   string
 	outfile   string
 	afterfile string
+	beforefile string
 	label     string
 	dupflag   bool
 	sched     bool
@@ -26,6 +27,7 @@ type args struct {
 	dead      bool
 	count     bool
 	after     bool
+	before     bool
 	args      []string
 }
 
@@ -36,6 +38,7 @@ func main() {
 	var appPtr *string
 	var outPtr *string
 	var afterPtr *string
+	var beforePtr *string
 	var labelPtr *string
 
 	// define flags
@@ -43,6 +46,7 @@ func main() {
 	appPtr = flag.String("a", "", "Filename to append new events")
 	outPtr = flag.String("o", "", "Filename for event output, default stdout")
 	afterPtr = flag.String("after", "", "Only use events at and after this date")
+	beforePtr = flag.String("before", "", "Only use events at and before this date")
 	labelPtr = flag.String("label", "", "Label word in drawer to identify conversion")
 	flag.BoolVar(&a.sched, "scheduled", false, "Event time should be scheduled")
 	flag.BoolVar(&a.dead, "deadline", false, "Event time should be deadline")
@@ -59,6 +63,7 @@ func main() {
 	a.appfile = *appPtr
 	a.outfile = *outPtr
 	a.afterfile = *afterPtr
+	a.beforefile = *beforePtr
 	a.label = *labelPtr
 	a.args = flag.Args()
 
@@ -68,6 +73,7 @@ func main() {
 func process(a args) {
 
 	var after bool
+	var before bool
 
 	afterTime := time.Now()
 	if a.afterfile != "" {
@@ -88,6 +94,29 @@ func process(a args) {
 			} else {
 				afterTime = t
 				after = true
+			}
+		}
+	}
+
+	beforeTime := time.Now()
+	if a.beforefile != "" {
+		if strings.HasPrefix(a.beforefile, "-") {
+			d, err := time.ParseDuration(a.beforefile)
+			if err != nil {
+				fmt.Printf("Before option, duration format error %s\n", err)
+				return
+			} else {
+				beforeTime = beforeTime.Add(d)
+				before = true
+			}
+		} else {
+			t, err := time.Parse("2050-01-01", a.beforefile)
+			if err != nil {
+				fmt.Printf("Before option, time format error %s\n", err)
+				return
+			} else {
+				beforeTime = t
+				before = true
 			}
 		}
 	}
@@ -165,6 +194,12 @@ func process(a args) {
 				// eliminate events before after
 				if after {
 					if event.GetStart().Before(afterTime) {
+						continue
+					}
+				}
+				// eliminate events after before
+				if before {
+					if event.GetEnd().After(beforeTime) {
 						continue
 					}
 				}
