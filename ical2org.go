@@ -110,7 +110,7 @@ func process(a args) {
 				before = true
 			}
 		} else {
-			t, err := time.Parse("2050-01-01", a.beforefile)
+			t, err := time.Parse("2006-01-02", a.beforefile)
 			if err != nil {
 				fmt.Printf("Before option, time format error %s\n", err)
 				return
